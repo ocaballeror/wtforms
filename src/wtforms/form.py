@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import concurrent.futures
 import itertools
 
 from wtforms.compat import iteritems, itervalues, with_metaclass
@@ -128,13 +129,17 @@ class BaseForm(object):
         """
         self._errors = None
         success = True
+        tasks = []
         for name, field in iteritems(self._fields):
+            extra = tuple()
             if extra_validators is not None and name in extra_validators:
                 extra = extra_validators[name]
-            else:
-                extra = tuple()
-            if not field.validate(self, extra):
-                success = False
+            tasks.append((field.validate, self, extra))
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(*task) for task in tasks]
+            for future in concurrent.futures.as_completed(futures):
+                success = success and future.result()
         return success
 
     @property
