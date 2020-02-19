@@ -32,10 +32,5 @@ script:
 cache:
   - pip
 
-branches:
-  only:
-    - master
-    - /^.*-maintenance$/
-
 notifications:
   email: false
